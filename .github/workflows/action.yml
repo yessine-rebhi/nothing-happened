@@ -1,17 +1,13 @@
 name: Nothing Happened Cleanup
 
 on:
-  push:
-    branches:
-      - 'dev'
-  schedule:
-    - cron: '0 0 * * *'
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'  # Daily cleanup
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,5 +20,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Set Git user
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Set up GitHub token
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/yessine-rebhi/nothing-happened.git
+
       - name: Run cleanup
-        run: npm run nothing-happened cleanup
+        run: npm run nothing-happened-cleanup
