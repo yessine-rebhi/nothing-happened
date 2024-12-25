@@ -14,7 +14,6 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -36,6 +35,9 @@ jobs:
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/yessine-rebhi/nothing-happened.git
 
+      - name: Pull latest changes from nothing-happened
+        run: git pull origin nothing-happened || echo "No changes to pull"
+
       - name: Run cleanup
         run: npm run nothing-happened cleanup
-        
+
