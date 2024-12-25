@@ -6,7 +6,7 @@ const program = new Command();
 program
   .name('nothing-happened')
   .description('Automated code cleanup for your repository')
-  .version('0.1.0');
+  .version('1.0.0');
 
 program
   .command('cleanup')
