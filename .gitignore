@@ -1,0 +1,31 @@
+# Node.js dependencies
+/node_modules/
+
+# Logs
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE settings (e.g., VSCode)
+.vscode/
+.idea/
+
+# Build output
+/dist/
+/build/
+
+# Configuration files
+*.env
+*.env.local
+
+# Test coverage
+/coverage/
+
+# Temporary files
+*.swp
+*.swo
+
+# GitHub Actions and CI-related files
+/.github/

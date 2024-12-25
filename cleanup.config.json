@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "comments": true,
+    "unusedCode": false
+  },
+  "excludePatterns": [
+    "**/node_modules/**",
+    "**/coverage/**"
+  ],
+  "dryRun": true
+}

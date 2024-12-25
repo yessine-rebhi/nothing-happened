@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "comments": true,
+    "unusedCode": true,
+    "emptyFiles": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "*.test.js"
+  ]
+}
