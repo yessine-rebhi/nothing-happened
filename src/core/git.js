@@ -1,10 +1,7 @@
 import { execSync } from "child_process";
 import chalk from "chalk";
+import simpleGit from 'simple-git';
 
-/**
- * Executes a Git command and returns the output.
- * Throws an error if the command fails.
- */
 function runGitCommand(command) {
   try {
     const output = execSync(command, { encoding: "utf-8" });
@@ -12,13 +9,10 @@ function runGitCommand(command) {
   } catch (error) {
     console.error(chalk.red(`Error executing Git command: ${command}`));
     console.error(chalk.red(error.message));
-    process.exit(1); // Exit the process if Git command fails
+    process.exit(1);
   }
 }
 
-/**
- * Checks if the directory is a Git repository.
- */
 export function isGitRepository() {
   try {
     execSync("git rev-parse --is-inside-work-tree", { stdio: "ignore" });
@@ -28,9 +22,6 @@ export function isGitRepository() {
   }
 }
 
-/**
- * Ensures the Git repository is clean before making changes.
- */
 export function ensureCleanGitStatus() {
   const status = runGitCommand("git status --porcelain");
   if (status) {
@@ -39,9 +30,6 @@ export function ensureCleanGitStatus() {
   }
 }
 
-/**
- * Creates or switches to the 'nothing-happened' branch.
- */
 export function switchToCleanupBranch(branchName = "nothing-happened") {
   const branches = runGitCommand("git branch --list");
   if (branches.includes(branchName)) {
@@ -53,18 +41,23 @@ export function switchToCleanupBranch(branchName = "nothing-happened") {
   }
 }
 
-/**
- * Adds and commits changes with a custom message.
- */
-export function commitChanges(commitMessage = "Cleanup: Automated code cleanup") {
-  runGitCommand("git add .");
-  runGitCommand(`git commit -m "${commitMessage}"`);
-  console.log(chalk.green("Changes committed successfully."));
+export async function commitChanges(message) {
+  try {
+    const git = simpleGit();
+    const status = await git.status();
+
+    if (status.files.length === 0) {
+      console.log("No changes to commit.");
+      return; // Skip commit if no changes
+    }
+
+    await git.commit(message);
+    console.log("Committed changes successfully.");
+  } catch (error) {
+    console.error("Error executing Git command:", error);
+  }
 }
 
-/**
- * Pushes the cleanup branch to the remote repository.
- */
 export function pushBranch(branchName = "nothing-happened") {
   runGitCommand(`git push origin ${branchName}`);
   console.log(chalk.green(`Branch '${branchName}' pushed to remote.`));

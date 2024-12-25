@@ -26,6 +26,3 @@ Thumbs.db
 # Temporary files
 *.swp
 *.swo
-
-# GitHub Actions and CI-related files
-/.github/

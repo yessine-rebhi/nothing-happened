@@ -1,14 +1,14 @@
 import path from "path";
-import { info, error } from "../cli/utils/logger.js"; // Logging utilities
+import { info, error } from "../cli/utils/logger.js";
 import { fileExists, readJsonFile } from "../cli/utils/fileUtils.js";
 
 const DEFAULT_CONFIG = {
   rules: {
-    comments: true, // Enable or disable cleaning comments
-    unusedCode: true, // Enable or disable cleaning unused code
+    comments: true,
+    unusedCode: true,
   },
-  excludePatterns: ["**/node_modules/**", "**/dist/**"], // Paths to exclude from cleaning
-  dryRun: false, // Default to actual cleanup mode
+  excludePatterns: ["**/node_modules/**", "**/dist/**"],
+  dryRun: false,
 };
 
 // Function to load a custom configuration file
@@ -26,12 +26,10 @@ export function loadCustomConfig(directoryPath) {
     } catch (err) {
       error(`Error parsing config file: ${configFile}`);
       error(err.message);
-      // Return the default config if there is an error reading the custom config
       return DEFAULT_CONFIG;
     }
   }
 
-  // If no custom config file is found, log and return default config
   info("No custom configuration found. Using default settings.");
   return DEFAULT_CONFIG;
 }
