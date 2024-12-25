@@ -3,7 +3,7 @@
 **nothing-happened** is a package inspired by Zoro’s calm endurance of pain and his iconic phrase, "nothing happened." This package will silently clean your imperfect code—removing unused code, comments, and clutter—leaving only a sharp, clean codebase. Once cleaned, the changes will be pushed to a branch named `nothing-happened`, as if nothing ever happened.
 
 <div align="center">
-  <img height="250" src="https://wallpapercave.com/wp/wp10509478.jpg" alt="GitHub zoro" />
+  <img height="250" src="./images/zoro-github.png" alt="GitHub zoro" />
 </div>
 
 ## 🚧 Development in Progress

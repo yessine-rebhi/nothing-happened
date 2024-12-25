@@ -1,13 +1,17 @@
 name: Nothing Happened Cleanup
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - 'dev'
   schedule:
-    - cron: '0 0 * * 0' # Weekly cleanup
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
