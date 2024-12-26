@@ -28,15 +28,18 @@ async function cleanFile(filePath, config) {
   }
 }
 
-// Function to recursively clean a directory
 async function cleanDirectory(directoryPath, config) {
   const files = await readdir(directoryPath);
 
   for (const file of files) {
     const fullPath = path.join(directoryPath, file);
 
-    // Skip excluded paths based on patterns in the config
-    if (config.excludePatterns.some((pattern) => fullPath.includes(pattern))) {
+    const isExcluded = config.excludePatterns.some((pattern) => {
+      const regex = new RegExp(pattern);
+      return regex.test(fullPath);
+    });
+
+    if (isExcluded) {
       warn(`Skipping excluded path: ${fullPath}`);
       continue;
     }
@@ -48,6 +51,7 @@ async function cleanDirectory(directoryPath, config) {
     }
   }
 }
+
 
 // Main cleanup function
 export async function cleanup(directoryPath, options = { dryRun: false }) {

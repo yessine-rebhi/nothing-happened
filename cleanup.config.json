@@ -4,8 +4,8 @@
     "unusedCode": false
   },
   "excludePatterns": [
-    "**/node_modules/**",
-    "**/coverage/**"
+    "node_modules",
+    "coverage"
   ],
-  "dryRun": true
+  "dryRun": false
 }
