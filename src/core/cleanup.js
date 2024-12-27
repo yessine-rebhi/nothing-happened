@@ -4,10 +4,23 @@ import { info, success, warn, error } from "../cli/utils/logger.js";
 import cleanupRules from "./rules.js";
 import { loadCustomConfig } from "./config.js";
 
+// Function to match advanced exclude patterns
+function isPathExcluded(filePath, excludePatterns) {
+  return excludePatterns.some((pattern) => {
+    const regex = new RegExp(
+      pattern
+        .replace(/\./g, "\\.") // Escape dots
+        .replace(/\*\*/g, ".*") // Replace double wildcards
+        .replace(/\*/g, "[^/]*") // Replace single wildcards
+    );
+    return regex.test(filePath);
+  });
+}
+
 // Function to clean a single file
 async function cleanFile(filePath, config) {
   try {
-    const originalContent = await readFile(filePath);
+    const originalContent = await readFile(filePath, "utf-8");
     let cleanedContent = originalContent;
 
     // Apply cleanup rules based on the configuration
@@ -20,26 +33,27 @@ async function cleanFile(filePath, config) {
 
     // If changes are made, write the cleaned content back to the file
     if (originalContent !== cleanedContent) {
-      await writeFile(filePath, cleanedContent);
-      success(`Cleaned: ${filePath}`);
+      if (!config.dryRun) {
+        await writeFile(filePath, cleanedContent, "utf-8");
+        success(`Cleaned: ${filePath}`);
+      } else {
+        info(`Dry-run preview of changes for: ${filePath}`);
+        console.log(cleanedContent);
+      }
     }
   } catch (err) {
     error(`Error cleaning ${filePath}: ${err.message}`);
   }
 }
 
+// Function to clean a directory
 async function cleanDirectory(directoryPath, config) {
   const files = await readdir(directoryPath);
 
   for (const file of files) {
-    const fullPath = path.join(directoryPath, file);
+    const fullPath = path.resolve(directoryPath, file);
 
-    const isExcluded = config.excludePatterns.some((pattern) => {
-      const regex = new RegExp(pattern);
-      return regex.test(fullPath);
-    });
-
-    if (isExcluded) {
+    if (isPathExcluded(fullPath, config.excludePatterns)) {
       warn(`Skipping excluded path: ${fullPath}`);
       continue;
     }
@@ -51,7 +65,6 @@ async function cleanDirectory(directoryPath, config) {
     }
   }
 }
-
 
 // Main cleanup function
 export async function cleanup(directoryPath, options = { dryRun: false }) {
@@ -68,23 +81,9 @@ export async function cleanup(directoryPath, options = { dryRun: false }) {
 
   if (config.dryRun) {
     warn("Running in dry-run mode. No changes will be made.");
-    // Log the potential changes without writing them to the files
-    const files = await readdir(directoryPath);
-    for (const file of files) {
-      const fullPath = path.join(directoryPath, file);
-      if (!(await isDirectory(fullPath))) {
-        const originalContent = await readFile(fullPath);
-        const previewContent = originalContent.replace(cleanupRules.comments, "");
-        if (originalContent !== previewContent) {
-          info(`Preview of changes for: ${fullPath}`);
-          console.log(previewContent);
-        }
-      }
-    }
-  } else {
-    // Perform the cleanup operation
-    await cleanDirectory(directoryPath, config);
   }
+
+  await cleanDirectory(directoryPath, config);
 
   info("Cleanup complete.");
 }

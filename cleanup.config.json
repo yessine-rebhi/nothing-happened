@@ -1,13 +1,16 @@
 {
   "rules": {
     "comments": true,
-    "unusedCode": false
+    "unusedCode": true
   },
   "excludePatterns": [
-    "node_modules",
-    "coverage",
-    "images",
-    ".github"
+    "**/node_modules/**",
+    "**/coverage/**",
+    "**/images/**",
+    "**/.github/**",
+    "**/.git/**",
+    "*.yml",
+    "*.yaml"
   ],
   "dryRun": false
 }
