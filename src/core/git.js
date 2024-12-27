@@ -58,7 +58,7 @@ export async function commitChanges(message) {
   }
 }
 
-export function pushBranch(branchName = "nothing-happened") {
+export async function pushBranch(branchName = "nothing-happened") {
   runGitCommand(`git push origin ${branchName}`);
   console.log(chalk.green(`Branch '${branchName}' pushed to remote.`));
 }

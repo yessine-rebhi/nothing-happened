@@ -5,7 +5,9 @@
   },
   "excludePatterns": [
     "node_modules",
-    "coverage"
+    "coverage",
+    "images",
+    ".github"
   ],
   "dryRun": false
 }
