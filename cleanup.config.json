@@ -1,17 +1,29 @@
 {
-  "rules": {
-    "comments": false,
-    "unusedCode": true
-  },
-  "excludePatterns": [
-    "**/node_modules/**",
-    "**/coverage/**",
-    "**/images/**",
-    "**/.github/**",
-    "**/.git/**",
-    "*.yml",
-    "*.yaml",
-    "**/package-lock.json/**"
+  "excludedFilesAndDirs": [
+    "node_modules",
+    ".git",
+    ".github",
+    "package-lock.json",
+    "yarn.lock",
+    ".env",
+    ".env.example",
+    ".gitignore",
+    "README.md",
+    "LICENSE",
+    "cleanup.config.json",
+    ".npmignore"
   ],
+  "cleaningRules": {
+    "js": {
+      "removeComments": true,
+      "removeUnusedVariables": true
+    },
+    "css": {
+      "removeComments": true
+    },
+    "html": {
+      "removeComments": true
+    }
+  },
   "dryRun": true
 }

@@ -1,6 +1,6 @@
-import { cleanup } from '../../core/cleanup.js';
 import { switchToCleanupBranch, commitChanges, pushBranch } from '../../core/git.js';
 import { loadCustomConfig } from '../../core/config.js';
+import cleanup from '../../core/cleanup.js';
 
 export async function cleanupCommand() {
   try {

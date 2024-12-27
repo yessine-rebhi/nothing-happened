@@ -75,3 +75,16 @@ export function writeJsonFile(filePath, data) {
     throw new Error(`Error writing to the file: ${filePath}`);
   }
 }
+
+// Function to delete a file
+export function unlink(filePath) {
+  return new Promise((resolve, reject) => {
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
