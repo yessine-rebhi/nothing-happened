@@ -4,11 +4,19 @@ import { fileExists, readJsonFile } from "../cli/utils/fileUtils.js";
 
 // Default configuration settings
 const DEFAULT_CONFIG = {
-  rules: {
-    comments: false,
-    unusedCode: true,
+  cleaningRules: {
+    "js": {
+      "removeComments": true,
+      "removeUnusedVariables": true
+    },
+    "css": {
+      "removeComments": true
+    },
+    "html": {
+      "removeComments": true
+    }
   },
-  excludePatterns: [
+  excludedFilesAndDirs: [
     "node_modules",
     ".git",
     ".github",
@@ -62,6 +70,5 @@ function mergeConfigs(defaultConfig, customConfig) {
       merged[key] = customConfig[key];
     }
   }
-
   return merged;
 }

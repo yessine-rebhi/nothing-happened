@@ -10,7 +10,7 @@ export async function cleanupCommand() {
     const config = loadCustomConfig(process.cwd());
 
     // Perform cleanup
-    await cleanup(process.cwd(), { dryRun: config.dryRun });
+    await cleanup(process.cwd(),config.dryRun );
 
     // Switch to the cleanup branch
     const branchName = config.branchName || 'nothing-happened';

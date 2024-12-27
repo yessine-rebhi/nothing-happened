@@ -1,141 +1,95 @@
-import fs from 'fs';
-import path from 'path';
-import { readdir, isDirectory, readFile, writeFile, fileExists } from '../cli/utils/fileUtils.js';
-import { warn } from "../cli/utils/logger.js";
+import { ESLint } from "eslint";
+import path from "path";
+import fs from "fs/promises";
+import { glob } from "glob";
+import madge from "madge";
 
-// Load cleanup configuration
-const configPath = path.resolve(process.cwd(), 'cleanup.config.json');
+// Configurable cleanup rules
+const config = {
+  removeComments: true,
+  removeUnusedVariables: true,
+  deleteUnusedFiles: true,
+  excludePatterns: [
+    "node_modules",
+    ".git",
+    ".github",
+    "package-lock.json",
+    "yarn.lock",
+    ".env",
+    ".env.example",
+    ".gitignore",
+    "README.md",
+    "LICENSE",
+    "cleanup.config.json",
+    ".npmignore"
+  ],
+};
 
-let config;
-
-try {
-  config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-} catch (error) {
-  console.error('Failed to load cleanup.config.json:', error);
-  process.exit(1); // Exit if config loading fails
+// Helper to remove comments from code using ESLint
+async function removeComments(filePath) {
+  const eslint = new ESLint({ fix: true });
+  const results = await eslint.lintFiles([filePath]);
+  await ESLint.outputFixes(results);
 }
 
-// Function to check if a file or directory should be excluded
-function shouldExclude(filePath) {
-  return config.excludedFilesAndDirs.some(excluded => filePath.includes(excluded));
+// Helper to check unused files using Madge
+async function findUnusedFiles(directoryPath) {
+  const result = await madge(directoryPath);
+  return result.orphans(); // List of files not used anywhere
 }
 
-// Function to recursively get files that are allowed to be cleaned (excluding specific ones)
-async function getFilesToClean(directoryPath) {
-  const files = await readdir(directoryPath);
-  const filesToClean = [];
+// Helper to clean file content
+async function cleanFile(filePath) {
+  try {
+    const originalContent = await fs.readFile(filePath, "utf-8");
 
-  for (const file of files) {
-    const fullPath = path.join(directoryPath, file);
+    let cleanedContent = originalContent;
 
-    // Skip excluded files and directories
-    if (shouldExclude(fullPath)) {
-      continue;
+    // Remove comments
+    if (config.removeComments) {
+      await removeComments(filePath);
+      cleanedContent = await fs.readFile(filePath, "utf-8");
     }
 
-    // If it's a directory, recurse into it
-    if (await isDirectory(fullPath)) {
-      const subFiles = await getFilesToClean(fullPath); // Recurse
-      filesToClean.push(...subFiles);
-    } else {
-      filesToClean.push(fullPath); // Add file to clean list
+    // Remove unused variables (ESLint handles this with autofix)
+    if (config.removeUnusedVariables) {
+      await removeComments(filePath);
+      cleanedContent = await fs.readFile(filePath, "utf-8");
     }
-  }
 
-  return filesToClean;
-}
-
-// Function to remove comments based on file type and config
-function removeComments(content, fileType) {
-  const rules = config.cleaningRules[fileType];
-
-  if (!rules) {
-    return content;
-  }
-
-  if (rules.removeComments) {
-    switch (fileType) {
-      case 'js':
-        return content.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
-      case 'css':
-        return content.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, "");
-      case 'html':
-        return content.replace(/<!--[\s\S]*?-->/g, "");
-      default:
-        return content;
-    }
-  }
-
-  return content;
-}
-
-// Function to remove unused variables in JavaScript (This is a simple example, could be more complex)
-function removeUnusedVariables(content) {
-  // This can be improved by using static analysis tools like ESLint or UglifyJS
-  return content.replace(/\bvar\s+\w+\b/g, '').replace(/\blet\s+\w+\b/g, '').replace(/\bconst\s+\w+\b/g, '');
-}
-
-// Function to clean a file based on the rules in config
-async function cleanFile(filePath, dryMode) {
-  const originalContent = await readFile(filePath);
-  const fileExtension = path.extname(filePath).slice(1); // Get file type (e.g., js, css, html)
-
-  // Remove comments based on config rules
-  let cleanedContent = removeComments(originalContent, fileExtension);
-
-  // Remove unused variables if it's a JS file and the config allows it
-  if (fileExtension === 'js' && config.cleaningRules.js.removeUnusedVariables) {
-    cleanedContent = removeUnusedVariables(cleanedContent);
-  }
-
-  // Dry mode: Just log the changes
-  if (dryMode) {
     if (originalContent !== cleanedContent) {
-      console.log(`Changes detected in: ${filePath}`);
+      await fs.writeFile(filePath, cleanedContent, "utf-8");
+      console.log(`Cleaned file: ${filePath}`);
     }
-  } else {
-    // Normal mode: Write the cleaned content back if changes were made
-    if (originalContent !== cleanedContent) {
-      await writeFile(filePath, cleanedContent);
-      console.log(`Cleaned: ${filePath}`);
-    }
+  } catch (error) {
+    console.error(`Failed to clean file ${filePath}: ${error.message}`);
   }
 }
 
-// Function to check if a file is unused (for deletion)
-async function isFileUnused(filePath) {
-  // For simplicity, this function checks if the file is not referenced anywhere else in the project
-  // Implement your own logic to track file usage across the project
-  return false; // Placeholder: you can integrate a tool to analyze code dependencies here
-}
+export default async function cleanup(directoryPath) {
+  try {
+    const allFiles = await glob(`${directoryPath}/**/*.*`, {
+      ignore: config.excludePatterns.map((pattern) => `${directoryPath}/${pattern}`),
+    });
 
-// Function to delete unused files
-async function deleteUnusedFile(filePath) {
-  if (fileExists(filePath)) {
-    fs.unlinkSync(filePath);
-    console.log(`Deleted unused file: ${filePath}`);
-  }
-}
+    console.log("Cleaning files...");
+    for (const file of allFiles) {
+      await cleanFile(file);
+    }
 
-// Function to cleanup the project
-export default async function cleanup(directoryPath, dryMode) {
-  const filesToClean = await getFilesToClean(directoryPath);
-  if (dryMode) warn(`Running in dry mode: No changes will be saved.`);
+    if (config.deleteUnusedFiles) {
+      console.log("Identifying unused files...");
+      const unusedFiles = await findUnusedFiles(directoryPath);
 
-
-  for (const file of filesToClean) {
-    // Clean each file
-    await cleanFile(file, dryMode);
-
-    // In dry mode, we only log changes; we don't delete files
-    if (!dryMode) {
-      // Optionally, check if the file is unused and delete it
-      const unused = await isFileUnused(file);
-      if (unused) {
-        await deleteUnusedFile(file);
+      for (const unusedFile of unusedFiles) {
+        const filePath = path.resolve(directoryPath, unusedFile);
+        await fs.rm(filePath, { force: true, recursive: true });
+        console.log(`Deleted unused file/directory: ${filePath}`);
       }
     }
-  }
 
-  console.log("Cleanup complete.");
+    console.log("Cleanup complete!");
+  } catch (error) {
+    console.error(`Error during cleanup: ${error.message}`);
+  }
 }
