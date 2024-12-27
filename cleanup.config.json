@@ -1,6 +1,6 @@
 {
   "rules": {
-    "comments": true,
+    "comments": false,
     "unusedCode": true
   },
   "excludePatterns": [
@@ -10,7 +10,8 @@
     "**/.github/**",
     "**/.git/**",
     "*.yml",
-    "*.yaml"
+    "*.yaml",
+    "**/package-lock.json/**"
   ],
-  "dryRun": false
+  "dryRun": true
 }

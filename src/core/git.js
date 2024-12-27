@@ -30,7 +30,7 @@ export function ensureCleanGitStatus() {
   }
 }
 
-export function switchToCleanupBranch(branchName = "nothing-happened") {
+export async function switchToCleanupBranch(branchName = "nothing-happened") {
   const branches = runGitCommand("git branch --list");
   if (branches.includes(branchName)) {
     console.log(chalk.green(`Switching to existing branch: ${branchName}`));

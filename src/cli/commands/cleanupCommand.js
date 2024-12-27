@@ -23,8 +23,8 @@ export async function cleanupCommand() {
     await commitChanges(commitMessage);
 
     // Push the cleanup branch
-    console.log(`Pushing branch: ${branchName}`);
-    await pushBranch(branchName);
+    // console.log(`Pushing branch: ${branchName}`);
+    // await pushBranch(branchName);
 
     console.log('Cleanup process completed successfully!');
   } catch (error) {
