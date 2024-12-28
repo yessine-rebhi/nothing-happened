@@ -1,15 +1,17 @@
 import { ESLint } from "eslint";
-import path from "path";
-import fs from "fs/promises";
-import { glob } from "glob";
+import glob from "glob";
 import madge from "madge";
+import depcheck from "depcheck";
+import fs from "fs/promises";
+import path from "path";
+import { loadCustomConfig } from "./config.js";
 
-// Configurable cleanup rules
-const config = {
+const DEFAULT_CONFIG = {
   removeComments: true,
   removeUnusedVariables: true,
   deleteUnusedFiles: true,
-  excludePatterns: [
+  removeUnusedDependencies: true,
+  excludedFilesAndDirs: [
     "node_modules",
     ".git",
     ".github",
@@ -23,73 +25,101 @@ const config = {
     "cleanup.config.json",
     ".npmignore"
   ],
+  dryRun: true,
 };
 
-// Helper to remove comments from code using ESLint
-async function removeComments(filePath) {
-  const eslint = new ESLint({ fix: true });
+async function removeComments(filePath, dryRun) {
+  if (!DEFAULT_CONFIG.removeComments) return;
+  const eslint = new ESLint({ fix: true, overrideConfig: { rules: { 'no-unused-vars': 'error' } } });
   const results = await eslint.lintFiles([filePath]);
   await ESLint.outputFixes(results);
-}
-
-// Helper to check unused files using Madge
-async function findUnusedFiles(directoryPath) {
-  const result = await madge(directoryPath);
-  return result.orphans(); // List of files not used anywhere
-}
-
-// Helper to clean file content
-async function cleanFile(filePath) {
-  try {
-    const originalContent = await fs.readFile(filePath, "utf-8");
-
-    let cleanedContent = originalContent;
-
-    // Remove comments
-    if (config.removeComments) {
-      await removeComments(filePath);
-      cleanedContent = await fs.readFile(filePath, "utf-8");
-    }
-
-    // Remove unused variables (ESLint handles this with autofix)
-    if (config.removeUnusedVariables) {
-      await removeComments(filePath);
-      cleanedContent = await fs.readFile(filePath, "utf-8");
-    }
-
-    if (originalContent !== cleanedContent) {
-      await fs.writeFile(filePath, cleanedContent, "utf-8");
-      console.log(`Cleaned file: ${filePath}`);
-    }
-  } catch (error) {
-    console.error(`Failed to clean file ${filePath}: ${error.message}`);
+  if (!dryRun) {
+    await fs.writeFile(filePath, results[0].output, "utf-8");
+    console.log(`Comments removed from: ${filePath}`);
+  } else {
+    console.log(`Dry run: Would remove comments from: ${filePath}`);
   }
 }
 
-export default async function cleanup(directoryPath) {
-  try {
-    const allFiles = await glob(`${directoryPath}/**/*.*`, {
-      ignore: config.excludePatterns.map((pattern) => `${directoryPath}/${pattern}`),
+async function removeUnusedVariables(filePath, dryRun) {
+  if (!DEFAULT_CONFIG.removeUnusedVariables) return;
+  const eslint = new ESLint({ fix: true, overrideConfig: { rules: { 'no-unused-vars': 'error' } } });
+  const results = await eslint.lintFiles([filePath]);
+  await ESLint.outputFixes(results);
+  if (!dryRun) {
+    await fs.writeFile(filePath, results[0].output, "utf-8");
+    console.log(`Unused variables removed from: ${filePath}`);
+  } else {
+    console.log(`Dry run: Would remove unused variables from: ${filePath}`);
+  }
+}
+
+async function findUnusedFiles(directoryPath) {
+  const result = await madge({ paths: [directoryPath], exclude: DEFAULT_CONFIG.excludedFilesAndDirs });
+  return result.orphans;
+}
+
+async function findUnusedDependencies(directoryPath) {
+  return new Promise((resolve, reject) => {
+    depcheck(directoryPath, { exclude: DEFAULT_CONFIG.excludedFilesAndDirs }, (err, results) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(results.missing);
+      }
     });
+  });
+}
 
-    console.log("Cleaning files...");
-    for (const file of allFiles) {
-      await cleanFile(file);
-    }
+export default async function cleanup(directoryPath, dryRun = DEFAULT_CONFIG.dryRun) {
+  const config = loadCustomConfig(directoryPath);
 
-    if (config.deleteUnusedFiles) {
-      console.log("Identifying unused files...");
-      const unusedFiles = await findUnusedFiles(directoryPath);
+  // Glob pattern for all files excluding specified directories and files
+  const files = await new Promise((resolve, reject) => {
+    glob(
+      path.join(directoryPath, '**', '*.{js,css,html}'),
+      {
+        ignore: config.excludedFilesAndDirs.map((pattern) => path.join(directoryPath, pattern)),
+      },
+      (err, files) => {
+        if (err) reject(err);
+        else resolve(files);
+      }
+    );
+  });
 
-      for (const unusedFile of unusedFiles) {
-        const filePath = path.resolve(directoryPath, unusedFile);
-        await fs.rm(filePath, { force: true, recursive: true });
-        console.log(`Deleted unused file/directory: ${filePath}`);
+  // Clean each file
+  for (const filePath of files) {
+    if (config.removeComments) await removeComments(filePath, dryRun);
+    if (config.removeUnusedVariables) await removeUnusedVariables(filePath, dryRun);
+  }
+
+  // Remove unused files
+  if (config.deleteUnusedFiles) {
+    const unusedFiles = await findUnusedFiles(directoryPath);
+    for (const file of unusedFiles) {
+      const filePath = path.join(directoryPath, file);
+      if (!dryRun) {
+        await fs.unlink(filePath);
+        console.log(`Deleted unused file: ${filePath}`);
+      } else {
+        console.log(`Dry run: Would delete unused file: ${filePath}`);
       }
     }
-
-    console.log("Cleanup complete!");
-  } catch (error) {
-    console.error(`Error during cleanup: ${error.message}`);
   }
+
+  // Remove unused dependencies
+  if (config.removeUnusedDependencies) {
+    const unusedDeps = await findUnusedDependencies(directoryPath);
+    if (!dryRun) {
+      // Logic to remove unused dependencies from package.json
+      // For now, log the unused dependencies
+      console.log("Unused dependencies identified:", unusedDeps);
+      // TODO: Implement removal from package.json
+    } else {
+      console.log("Dry run: Would remove unused dependencies:", unusedDeps);
+    }
+  }
+
+  console.log("Cleanup process completed.");
 }
