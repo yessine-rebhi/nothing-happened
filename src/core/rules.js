@@ -1,6 +1,6 @@
 const cleanupRules = {
-  comments: /\/\/\s*(TODO|FIXME|Unnecessary).*/g,
-  unusedCode: /\/\/.*\n/g,
+  comments: /^\/\/\s*(TODO|FIXME|Unnecessary).*(\n|$)/gm,
+  unusedCode: /^\/\/.*(\n|$)/gm,
   emptyFiles: []
 };
 export default cleanupRules;
