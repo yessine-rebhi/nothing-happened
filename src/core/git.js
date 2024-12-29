@@ -48,7 +48,7 @@ export async function commitChanges(message) {
 
     if (status.files.length === 0) {
       console.log("No changes to commit.");
-      return; // Skip commit if no changes
+      return;
     }
 
     await git.commit(message);
