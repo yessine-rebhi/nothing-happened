@@ -1,8 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { info, warn } from "../cli/utils/logger.js";
-import postcss from 'postcss';
-import discardComments from 'postcss-discard-comments';
+import { warn } from "../cli/utils/logger.js";
 import { cleanCSSFile } from '../cli/utils/cleanCSSFile.js';
 import { cleanHTMLFile } from '../cli/utils/cleanHtmlFile.js';
 import { cleanJavaScriptFile } from '../cli/utils/cleanJSFile.js';
@@ -63,12 +61,7 @@ async function cleanFile(filePath, dryMode) {
     }
   }
 }
-export default async function cleanup(directoryPath) {
-  let {
-    dryRun
-  } = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
-    dryRun: true
-  };
+export default async function cleanup(directoryPath, dryRun) {
   const filesToClean = await getFilesToClean(directoryPath);
   if (dryRun) {
     warn("Running in dry mode: No changes will be saved.");
